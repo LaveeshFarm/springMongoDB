@@ -1,9 +1,9 @@
 package ru.mrsu.springmongodb.controller;
 
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.mrsu.springmongodb.model.Client;
 import ru.mrsu.springmongodb.repository.ClientRepository;
@@ -37,15 +37,30 @@ public class ClientController {
     }
 
     @GetMapping("/internal/client/show/id/{id}")
-    Client findById(@PathVariable("id") Integer id) {
+    ClientDTO.ClientNoId findById(@PathVariable("id") Integer id) {
         log.trace("Method findById() of class {} was called", ClientController.class);
-        return clientRepository.findClientByBaseId(id);
+        Client baseClient = clientRepository.findClientByBaseId(id);
+        return new ClientDTO.ClientNoId(baseClient.getBaseId(), baseClient.getName(), baseClient.getNumber());
     }
 
     @GetMapping("/internal/client/create")
     void createClient(@RequestParam(name = "name") String name, @RequestParam(name = "number") String number) {
         log.trace("Method createClient() of class {} was called", ClientController.class);
-        Client client = new Client(ObjectId.get(), name, number);
+        Client lastIdClient = clientRepository.findFirstByOrderByBaseIdDesc();
+        Integer id;
+        if(lastIdClient.getBaseId() != null) {
+            id = clientRepository.findFirstByOrderByBaseIdDesc().getBaseId() + 1;
+        } else {
+            id = 1;
+        }
+
+        Client client = null;
+        if(id != null) {
+            client = new Client(ObjectId.get(), id, name, number);
+        } else {
+            client = new Client(ObjectId.get(), name, number);
+        }
+
         try {
             clientRepository.save(client);
         } catch (Exception e) {
@@ -53,5 +68,19 @@ public class ClientController {
             log.error("Method createClient() of class {} can't save client in database", ClientController.class);
         }
         log.info("Client was added to MongoDB repository");
+    }
+
+    public enum ClientDTO{;
+        private interface Id {ObjectId getId();}
+        private interface BaseId {Integer getBaseId();}
+        private interface Name {String getName();}
+        private interface Number {String getNumber();}
+
+        @Value
+        public static class ClientNoId implements BaseId, Name, Number {
+            Integer baseId;
+            String name;
+            String number;
+        }
     }
 }
