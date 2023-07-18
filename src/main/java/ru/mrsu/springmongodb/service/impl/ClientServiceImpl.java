@@ -69,13 +69,18 @@ public class ClientServiceImpl implements ClientService {
     public void delete() {
         try {
             clientRepository.deleteAll();
-        } catch (NotFoundApiException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            throw NotFoundApiException.Builder.notFoundApiException().message(e.toString()).build();
         }
     }
 
     public List<Client> findClients() {
-        List<Client> clients = clientRepository.findAll();
-        return clients;
+        try {
+            List<Client> clients = clientRepository.findAll();
+            return clients;
+        }
+        catch (Exception e) {
+            throw NotFoundApiException.Builder.notFoundApiException().message(e.toString()).build();
+        }
     }
 }
