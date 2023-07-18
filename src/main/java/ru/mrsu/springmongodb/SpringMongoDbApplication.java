@@ -11,5 +11,4 @@ public class SpringMongoDbApplication {
     public static void main(String[] args) {
         SpringApplication.run(SpringMongoDbApplication.class, args);
     }
-
 }

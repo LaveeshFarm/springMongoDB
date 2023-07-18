@@ -6,7 +6,7 @@ import ru.mrsu.springmongodb.model.Client;
 import java.util.List;
 
 public interface ClientRepository extends MongoRepository<Client, String> {
-    Client findClientByBaseId(Integer id);
+    Client findClientById(String id);
     List<Client> findClientByName(String name);
-    Client findFirstByOrderByBaseIdDesc();
+    Client findByNameAndNumber(String name, String number);
 }
