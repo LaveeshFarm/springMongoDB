@@ -21,30 +21,26 @@ public class ClientService {
     @Autowired
     ClientRepository clientRepository;
 
-    public ResponseEntity<Void> create(ClientDTO.ClientNoId client) {
+    public void create(ClientDTO.ClientNoId client) {
         if(client != null) {
             Client oldClient = clientRepository.findByNameAndNumber(client.getName(), client.getNumber());
             Client newClient = new Client(ObjectId.get(), client.getName(), client.getNumber());
             try {
                 if(oldClient == null || !newClient.equals(oldClient)) {
                     clientRepository.save(newClient);
-                    return new ResponseEntity<>(HttpStatus.CREATED);
                 }
 
                 else {
                     log.error("Client with same name and number exists.");
-                    return new ResponseEntity<>(HttpStatus.FOUND);
                 }
             }
             catch (Exception e) {
                 e.printStackTrace();
                 log.error("Method createClient() of class {} can't save client in database", ClientController.class);
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
         }
         else {
             log.error("Client wasn't created because request body is null");
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
     }
 
