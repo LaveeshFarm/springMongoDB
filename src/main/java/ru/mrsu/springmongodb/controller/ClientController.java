@@ -4,7 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.mrsu.springmongodb.model.Client;
-import ru.mrsu.springmongodb.service.ClientService;
+import ru.mrsu.springmongodb.service.impl.ClientServiceImpl;
+import ru.mrsu.springmongodb.model.ClientDTO;
 
 import java.util.List;
 
@@ -12,7 +13,7 @@ import java.util.List;
 public class ClientController {
 
     @Autowired
-    ClientService clientService;
+    ClientServiceImpl clientService;
     @GetMapping("/internal/client/show/all")
     ResponseEntity<List<Client>> getClients() {
         return ResponseEntity.ok(clientService.findClients());
@@ -20,21 +21,21 @@ public class ClientController {
 
     @GetMapping("/internal/client/delete/all")
     void dropClients() {
-        clientService.deleteClients();
+        clientService.delete();
     }
 
     @GetMapping("/internal/client/show/name/{name}")
-    ResponseEntity<List<ClientService.ClientDTO.ClientNoId>> findByName(@PathVariable("name") String name) {
+    ResponseEntity<List<ClientDTO.ClientNoId>> findByName(@PathVariable("name") String name) {
         return ResponseEntity.ok(clientService.findByName(name));
     }
 
     @GetMapping("/internal/client/show/id/{id}")
-    ResponseEntity<ClientService.ClientDTO.ClientNoId> findById(@PathVariable("id") String id) {
+    ResponseEntity<ClientDTO.ClientNoId> findById(@PathVariable("id") String id) {
         return ResponseEntity.ok(clientService.findById(id));
     }
 
     @PostMapping("/internal/client/create")
-    void createClient(@RequestBody ClientService.ClientDTO.ClientNoId client) {
+    void createClient(@RequestBody ClientDTO.ClientNoId client) {
         clientService.create(client);
     }
 
