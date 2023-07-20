@@ -19,8 +19,4 @@ public class Client {
     private String name;
 
     private String number;
-
-    public boolean equals(Client client) {
-        return name.equals(client.getName()) && number.equals(client.getNumber());
-    }
 }

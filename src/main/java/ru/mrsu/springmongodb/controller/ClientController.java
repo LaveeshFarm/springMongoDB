@@ -20,8 +20,9 @@ public class ClientController {
     }
 
     @GetMapping("/internal/client/delete/all")
-    void dropClients() {
+    ResponseEntity<Void> dropClients() {
         clientService.delete();
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/internal/client/show/name/{name}")
@@ -35,9 +36,8 @@ public class ClientController {
     }
 
     @PostMapping("/internal/client/create")
-    void createClient(@RequestBody ClientDTO.ClientNoId client) {
+    ResponseEntity<Void> createClient(@RequestBody ClientDTO.ClientNoId client) {
         clientService.create(client);
+        return ResponseEntity.ok().build();
     }
-
-
 }

@@ -3,6 +3,7 @@ package ru.mrsu.springmongodb.service.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.mrsu.handler.exception.NotFoundApiException;
 import ru.mrsu.springmongodb.model.Client;
@@ -25,7 +26,9 @@ public class ClientServiceImpl implements ClientService {
             Client oldClient = clientRepository.findByNameAndNumber(client.getName(), client.getNumber());
             Client newClient = new Client(ObjectId.get(), client.getName(), client.getNumber());
 
-            if(oldClient == null || !newClient.equals(oldClient)) {
+            if(oldClient == null ||
+                    !(oldClient.getName().equals(newClient.getName()) &&
+                            oldClient.getNumber().equals(newClient.getNumber()))) {
                 clientRepository.save(newClient);
             }
             else {
@@ -42,8 +45,11 @@ public class ClientServiceImpl implements ClientService {
         if (id != null && !id.equals("")) {
             Client baseClient = clientRepository.findClientById(id);
 
-            if(baseClient != null)
+            if(baseClient != null) {
                 return new ClientDTO.ClientNoId( baseClient.getName(), baseClient.getNumber());
+            } else {
+                return null;
+            }
         }
         log.error("Can't find client by ID because ID is null");
         throw NotFoundApiException.Builder.notFoundApiException().build();
@@ -60,7 +66,7 @@ public class ClientServiceImpl implements ClientService {
                 return clientNoIdList;
             }
             log.error("No clients name {} found", name);
-            throw NotFoundApiException.Builder.notFoundApiException().build();
+            return null;
         }
         log.error("Can't find client by ID because ID is null");
         throw NotFoundApiException.Builder.notFoundApiException().build();
