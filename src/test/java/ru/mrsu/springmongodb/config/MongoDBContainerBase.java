@@ -9,7 +9,8 @@ import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
 public abstract class MongoDBContainerBase {
-    protected static final MongoDBContainer mongoDBContainer = new MongoDBContainer(DockerImageName.parse("mongo:4.4.14"));
+    protected static final MongoDBContainer mongoDBContainer =
+            new MongoDBContainer(DockerImageName.parse("mongo:4.4.14"));
     protected MongoDBContainerBase() {
     }
 

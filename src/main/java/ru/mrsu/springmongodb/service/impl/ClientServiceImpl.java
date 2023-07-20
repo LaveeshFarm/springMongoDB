@@ -3,7 +3,6 @@ package ru.mrsu.springmongodb.service.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.mrsu.handler.exception.NotFoundApiException;
 import ru.mrsu.springmongodb.model.Client;
@@ -46,7 +45,7 @@ public class ClientServiceImpl implements ClientService {
             Client baseClient = clientRepository.findClientById(id);
 
             if(baseClient != null) {
-                return new ClientDTO.ClientNoId( baseClient.getName(), baseClient.getNumber());
+                return new ClientDTO.ClientNoId(baseClient.getName(), baseClient.getNumber());
             } else {
                 return null;
             }
@@ -58,6 +57,7 @@ public class ClientServiceImpl implements ClientService {
     public List<ClientDTO.ClientNoId> findByName(String name) {
         if (name != null && !name.equals("")) {
             List<Client> listClients = clientRepository.findClientByName(name);
+
             if (!listClients.isEmpty()) {
                 List<ClientDTO.ClientNoId> clientNoIdList = new ArrayList<>();
                 listClients.forEach(client -> {
