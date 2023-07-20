@@ -20,6 +20,7 @@ import ru.mrsu.springmongodb.service.ClientService;
 import ru.mrsu.springmongodb.service.impl.ClientServiceImpl;
 
 import java.util.List;
+import java.util.Objects;
 
 @ExtendWith(SpringExtension.class)
 @DataMongoTest(excludeAutoConfiguration = EmbeddedMongoAutoConfiguration.class)
@@ -51,7 +52,7 @@ public class ClientControllerTest extends MongoDBContainerBase {
 
     @Test
     void dropClients_StatusOK() {
-        Assertions.assertTrue(clientController.dropClients().getStatusCode().equals(HttpStatus.OK));
+        Assertions.assertEquals(clientController.dropClients().getStatusCode(), HttpStatus.OK);
     }
     @Test
     void findByName_ThrowNotFoundApiException_NameIsNull() {
@@ -81,7 +82,7 @@ public class ClientControllerTest extends MongoDBContainerBase {
         ResponseEntity<List<ClientDTO.ClientNoId>> response = clientController.findByName("Katya");
 
         Assertions.assertTrue(response.getStatusCode().equals(HttpStatus.OK) &&
-                !response.getBody().isEmpty());
+                !Objects.requireNonNull(response.getBody()).isEmpty());
     }
 
 
@@ -127,7 +128,8 @@ public class ClientControllerTest extends MongoDBContainerBase {
     void create_ClientCreated() {
         clientService.delete();
         List<Client> before = clientService.findClients();
-        ResponseEntity<Void> response = clientController.createClient(new ClientDTO.ClientNoId("Misha", "AAA111"));
+        ResponseEntity<Void> response =
+                clientController.createClient(new ClientDTO.ClientNoId("Misha", "AAA111"));
         List<Client> after = clientService.findClients();
         Assertions.assertTrue(response.getStatusCode().equals(HttpStatus.OK) && !before.equals(after));
     }
@@ -137,7 +139,8 @@ public class ClientControllerTest extends MongoDBContainerBase {
         clientService.delete();
         clientService.create(new ClientDTO.ClientNoId("Misha", "AAA111"));
         List<Client> before = clientService.findClients();
-        ResponseEntity<Void> response = clientController.createClient(new ClientDTO.ClientNoId("Misha", "AAA111"));
+        ResponseEntity<Void> response =
+                clientController.createClient(new ClientDTO.ClientNoId("Misha", "AAA111"));
         List<Client> after = clientService.findClients();
         Assertions.assertTrue(response.getStatusCode().equals(HttpStatus.OK) && before.equals(after));
     }
