@@ -9,6 +9,7 @@ import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration;
+import ru.mrsu.handler.exception.NotFoundApiException;
 import ru.mrsu.springmongodb.config.MongoDBContainerBase;
 import ru.mrsu.springmongodb.model.Client;
 import ru.mrsu.springmongodb.model.ClientDTO;
@@ -28,25 +29,26 @@ public class ClientServiceTest extends MongoDBContainerBase {
     ClientService clientService;
 
     @Test
-    void createTest() {
-        ClientDTO.ClientNoId client = new ClientDTO.ClientNoId("Misha", "FFF111");
-//        clientRepository.save(new Client(ObjectId.get(), "Misha", "FFF111"));
+    void createTest_NotFoundApiException_ClientIsNull() {
+        Assertions.assertThrows(NotFoundApiException.class, () -> clientService.create(null));
+    }
+    @Test
+    void createTest_createClient() {
+        clientRepository.deleteAll();
         List<Client> before = clientRepository.findAll();
-        Client duplicate = null;
-        if (before != null && !before.isEmpty()) {
-            duplicate = before.stream().filter(oldClient -> oldClient.getName().equals(client.getName()) &&
-                oldClient.getNumber().equals(client.getNumber())).findFirst().get();
-        }
-
-        clientService.create(client);
+        clientService.create(new ClientDTO.ClientNoId("Misha", "FFF111"));
         List<Client> after = clientRepository.findAll();
+        Assertions.assertNotEquals(before, after);
+    }
 
-        if(duplicate != null) {
-            Assertions.assertEquals(before, after);
-        } else {
-            Assertions.assertNotNull(after.stream().filter(newClient -> newClient.getName().equals(client.getName()) &&
-                    newClient.getNumber().equals(client.getNumber())).findFirst().get());
-        }
+    @Test
+    void createTest_NotCreateClient_ClientIsAlreadyExists() {
+        clientRepository.deleteAll();
+        clientRepository.save(new Client(ObjectId.get(), "Misha", "FFF111"));
+        List<Client> before = clientRepository.findAll();
+        clientService.create(new ClientDTO.ClientNoId("Misha", "FFF111"));
+        List<Client> after = clientRepository.findAll();
+        Assertions.assertEquals(before, after);
     }
 
     @Test
