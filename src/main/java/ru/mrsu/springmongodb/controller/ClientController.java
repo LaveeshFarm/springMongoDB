@@ -1,11 +1,12 @@
 package ru.mrsu.springmongodb.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.mrsu.springmongodb.model.Client;
+import ru.mrsu.springmongodb.model.ClientNoId;
 import ru.mrsu.springmongodb.service.impl.ClientServiceImpl;
-import ru.mrsu.springmongodb.model.ClientDTO;
 
 import java.util.List;
 
@@ -26,18 +27,19 @@ public class ClientController {
     }
 
     @GetMapping("/internal/client/show/name/{name}")
-    ResponseEntity<List<ClientDTO.ClientNoId>> findByName(@PathVariable("name") String name) {
+    ResponseEntity<List<ClientNoId>> findByName(@PathVariable("name") String name) {
         return ResponseEntity.ok(clientService.findByName(name));
     }
 
     @GetMapping("/internal/client/show/id/{id}")
-    ResponseEntity<ClientDTO.ClientNoId> findById(@PathVariable("id") String id) {
+    ResponseEntity<ClientNoId> findById(@PathVariable("id") String id) {
         return ResponseEntity.ok(clientService.findById(id));
     }
 
     @PostMapping("/internal/client/create")
-    ResponseEntity<Void> createClient(@RequestBody ClientDTO.ClientNoId client) {
+    ResponseEntity<Void> createClient(@RequestBody ClientNoId client) {
         clientService.create(client);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+
     }
 }

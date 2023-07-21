@@ -4,11 +4,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.mrsu.handler.exception.AlreadyExistsException;
 import ru.mrsu.handler.exception.NotFoundApiException;
 import ru.mrsu.springmongodb.model.Client;
+import ru.mrsu.springmongodb.model.ClientNoId;
 import ru.mrsu.springmongodb.repository.ClientRepository;
 import ru.mrsu.springmongodb.service.ClientService;
-import ru.mrsu.springmongodb.model.ClientDTO;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,8 +21,8 @@ public class ClientServiceImpl implements ClientService {
     @Autowired
     ClientRepository clientRepository;
 
-    public void create(ClientDTO.ClientNoId client) {
-        if(client != null) {
+    public void create(ClientNoId client) {
+        if(client != null && !client.isEmpty()) {
             Client oldClient = clientRepository.findByNameAndNumber(client.getName(), client.getNumber());
             Client newClient = new Client(ObjectId.get(), client.getName(), client.getNumber());
 
@@ -32,6 +33,7 @@ public class ClientServiceImpl implements ClientService {
             }
             else {
                 log.error("Client with same name and number exists.");
+                throw AlreadyExistsException.Builder.alreadyExistsException().build();
             }
         }
         else {
@@ -40,33 +42,33 @@ public class ClientServiceImpl implements ClientService {
         }
     }
 
-    public ClientDTO.ClientNoId findById(String id) {
+    public ClientNoId findById(String id) {
         if (id != null && !id.equals("")) {
             Client baseClient = clientRepository.findClientById(id);
 
             if(baseClient != null) {
-                return new ClientDTO.ClientNoId(baseClient.getName(), baseClient.getNumber());
+                return new ClientNoId(baseClient.getName(), baseClient.getNumber());
             } else {
-                return null;
+                log.error("No clients id {} found", id);
+                return new ClientNoId();
             }
         }
         log.error("Can't find client by ID because ID is null");
         throw NotFoundApiException.Builder.notFoundApiException().build();
     }
 
-    public List<ClientDTO.ClientNoId> findByName(String name) {
+    public List<ClientNoId> findByName(String name) {
         if (name != null && !name.equals("")) {
             List<Client> listClients = clientRepository.findClientByName(name);
-
+            List<ClientNoId> clientNoIdList = new ArrayList<>();
             if (!listClients.isEmpty()) {
-                List<ClientDTO.ClientNoId> clientNoIdList = new ArrayList<>();
                 listClients.forEach(client -> {
-                    clientNoIdList.add(new ClientDTO.ClientNoId(client.getName(), client.getNumber()));
+                    clientNoIdList.add(new ClientNoId(client.getName(), client.getNumber()));
                 });
-                return clientNoIdList;
+            } else {
+                log.error("No clients name {} found", name);
             }
-            log.error("No clients name {} found", name);
-            return null;
+            return clientNoIdList;
         }
         log.error("Can't find client by ID because ID is null");
         throw NotFoundApiException.Builder.notFoundApiException().build();

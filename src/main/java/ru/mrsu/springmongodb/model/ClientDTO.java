@@ -12,5 +12,10 @@ public enum ClientDTO{;
     public static class ClientNoId implements Name, Number {
         String name;
         String number;
+
+        public boolean isEmpty() {
+            return (name == null || name.equals("")) &&
+                    (number == null || number.equals(""));
+        }
     }
 }

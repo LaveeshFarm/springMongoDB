@@ -1,30 +1,35 @@
 package ru.mrsu.springmongodb.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.types.ObjectId;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.boot.test.autoconfigure.data.mongo.AutoConfigureDataMongo;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import ru.mrsu.handler.exception.NotFoundApiException;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.web.servlet.MockMvc;
 import ru.mrsu.springmongodb.config.MongoDBContainerBase;
 import ru.mrsu.springmongodb.model.Client;
-import ru.mrsu.springmongodb.model.ClientDTO;
+import ru.mrsu.springmongodb.model.ClientNoId;
 import ru.mrsu.springmongodb.repository.ClientRepository;
 import ru.mrsu.springmongodb.service.ClientService;
 import ru.mrsu.springmongodb.service.impl.ClientServiceImpl;
 
-import java.util.List;
-import java.util.Objects;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(SpringExtension.class)
-@DataMongoTest(excludeAutoConfiguration = EmbeddedMongoAutoConfiguration.class)
 @Import({ClientServiceImpl.class, ClientController.class})
+//@AutoConfigureMockMvc
+@WebMvcTest(ClientController.class)
+
+@AutoConfigureMockMvc
+@AutoConfigureDataMongo
+@ContextConfiguration
 public class ClientControllerTest extends MongoDBContainerBase {
     @Autowired
     ClientService clientService;
@@ -32,116 +37,148 @@ public class ClientControllerTest extends MongoDBContainerBase {
     ClientController clientController;
     @Autowired
     ClientRepository clientRepository;
+    @Autowired
+    private MockMvc mvc;
 
     @Test
-    void getClients_StatusOKAndListEmpty_EmptyDB() {
+    void getClients_StatusOKAndListEmpty_EmptyDB() throws Exception {
         clientService.delete();
-        ResponseEntity<List<Client>> response = clientController.getClients();
-        Assertions.assertTrue(response.getStatusCode().equals(HttpStatus.OK) &&
-                (response.getBody() == null || response.getBody().isEmpty()));
+        mvc.perform(get("/internal/client/show/all")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(content().string("[]"));
     }
 
     @Test
-    void getClients_StatusOKAndListNotEmpty_NotEmptyDB() {
-        clientService.create(new ClientDTO.ClientNoId("Misha", "AAA111"));
-        ResponseEntity<List<Client>> response = clientController.getClients();
-        Assertions.assertTrue(response.getStatusCode().equals(HttpStatus.OK) &&
-                response.getBody() != null &&
-                !response.getBody().isEmpty());
+    void getClients_StatusOKAndListNotEmpty_NotEmptyDB() throws Exception {
+        clientService.create(new ClientNoId("Misha", "AAA111"));
+        mvc.perform(get("/internal/client/show/all")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$[0].name").value("Misha"));
     }
 
     @Test
-    void dropClients_StatusOK() {
-        Assertions.assertEquals(clientController.dropClients().getStatusCode(), HttpStatus.OK);
+    void dropClients_StatusOK() throws Exception {
+        mvc.perform(get("/internal/client/delete/all")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
     }
     @Test
-    void findByName_ThrowNotFoundApiException_NameIsNull() {
+    void findByName_ThrowNotFoundApiException_NameIsNull() throws Exception {
         clientService.delete();
-        Assertions.assertThrows(NotFoundApiException.class, () -> clientController.findByName(null));
+        mvc.perform(get("/internal/client/show/name/")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
     }
 
+//    @Test
+//    void findByName_ThrowNotFoundApiException_NameIsEmpty() {
+//        clientService.delete();
+//        Assertions.assertThrows(NotFoundApiException.class, () -> clientController.findByName(""));
+//    }
     @Test
-    void findByName_ThrowNotFoundApiException_NameIsEmpty() {
+    void findByName_StatusOKAndListEmpty_AnotherName() throws Exception {
         clientService.delete();
-        Assertions.assertThrows(NotFoundApiException.class, () -> clientController.findByName(""));
+        clientService.create(new ClientNoId("Katya", "AAA111"));
+//        ResponseEntity<List<ClientNoId()>> response = clientController.findByName("Misha");
+//        Assertions.assertTrue(response.getStatusCode().equals(HttpStatus.OK) &&
+//                (response.getBody() == null || response.getBody().isEmpty()));
+        mvc.perform(get("/internal/client/show/name/Misha")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().string("[]"));
     }
+
     @Test
-    void findByName_StatusOKAndListEmpty_AnotherName() {
+    void findByName_StatusOKAndListNotEmpty_TrulyName() throws Exception {
         clientService.delete();
-        clientService.create(new ClientDTO.ClientNoId("Katya", "AAA111"));
-        ResponseEntity<List<ClientDTO.ClientNoId>> response = clientController.findByName("Misha");
-
-        Assertions.assertTrue(response.getStatusCode().equals(HttpStatus.OK) &&
-                (response.getBody() == null || response.getBody().isEmpty()));
+        clientService.create(new ClientNoId("Katya", "AAA111"));
+        mvc.perform(get("/internal/client/show/name/Katya")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$[0].name").value("Katya"));
     }
 
+
     @Test
-    void findByName_StatusOKAndListNotEmpty_TrulyName() {
+    void findById_ThrowNotFoundApiException_IdIsNull() throws Exception {
         clientService.delete();
-        clientService.create(new ClientDTO.ClientNoId("Katya", "AAA111"));
-        ResponseEntity<List<ClientDTO.ClientNoId>> response = clientController.findByName("Katya");
-
-        Assertions.assertTrue(response.getStatusCode().equals(HttpStatus.OK) &&
-                !Objects.requireNonNull(response.getBody()).isEmpty());
+//        Assertions.assertThrows(NotFoundApiException.class, () -> clientController. findById(null));
+        mvc.perform(get("/internal/client/show/id/")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
     }
 
+//    @Test
+//    void findById_ThrowNotFoundApiException_IdIsEmpty() {
+//        clientService.delete();
+//        Assertions.assertThrows(NotFoundApiException.class, () -> clientController.findById(""));
+//    }
 
     @Test
-    void findById_ThrowNotFoundApiException_IdIsNull() {
-        clientService.delete();
-        Assertions.assertThrows(NotFoundApiException.class, () -> clientController. findById(null));
-    }
-
-    @Test
-    void findById_ThrowNotFoundApiException_IdIsEmpty() {
-        clientService.delete();
-        Assertions.assertThrows(NotFoundApiException.class, () -> clientController.findById(""));
-    }
-
-    @Test
-    void findById_StatusOKAndListEmpty_AnotherId() {
+    void findById_StatusOKAndListEmpty_AnotherId() throws Exception {
         clientService.delete();
         clientRepository.save(new Client(ObjectId.get(), "Misha", "AAA111"));
-        ResponseEntity<ClientDTO.ClientNoId> response = clientController.findById(ObjectId.get().toString());
-
-        Assertions.assertTrue(response.getStatusCode().equals(HttpStatus.OK) &&
-                response.getBody() == null);
+        mvc.perform(get("/internal/client/show/id/" + ObjectId.get())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.empty").value("true"));
     }
 
     @Test
-    void findById_StatusOKAndListNotEmpty_TrulyId() {
+    void findById_StatusOKAndListNotEmpty_TrulyId() throws Exception {
         clientService.delete();
         ObjectId trulyId = ObjectId.get();
         clientRepository.save(new Client(trulyId, "Misha", "AAA111"));
-        ResponseEntity<ClientDTO.ClientNoId> response = clientController.findById(trulyId.toString());
-
-        Assertions.assertTrue(response.getStatusCode().equals(HttpStatus.OK) &&
-                response.getBody() != null);
+        mvc.perform(get("/internal/client/show/id/" + trulyId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.name").value("Misha"));
     }
 
     @Test
-    void create_NotFoundApiException_ClientIsNull() {
-        Assertions.assertThrows(NotFoundApiException.class, () -> clientController.createClient(null));
+    void create_NotFoundApiException_ClientIsNull() throws Exception {
+        mvc.perform(post("/internal/client/create")
+                        .content(asJsonString(new ClientNoId(null, null)))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andDo(print());
+//                .andExpect(result -> Assertions.assertTrue(result.getResolvedException() instanceof NotFoundApiException))
+//                .andExpect(result -> Assertions.assertEquals(HttpStatus.NOT_FOUND.getReasonPhrase(), result.getResolvedException().getMessage()));
+//                .andExpect(result -> Assertions.assertEquals("Client wasn't created because request body is null", result.getResolvedException().getMessage()));
+    }
+
+    private static String asJsonString(Object obj) {
+        try {
+            return new ObjectMapper().writeValueAsString(obj);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test
-    void create_ClientCreated() {
+    void create_ClientCreated() throws Exception {
         clientService.delete();
-        List<Client> before = clientService.findClients();
-        ResponseEntity<Void> response =
-                clientController.createClient(new ClientDTO.ClientNoId("Misha", "AAA111"));
-        List<Client> after = clientService.findClients();
-        Assertions.assertTrue(response.getStatusCode().equals(HttpStatus.OK) && !before.equals(after));
+        mvc.perform(post("/internal/client/create")
+                        .content(asJsonString(new ClientNoId("Misha", "AAA111")))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated());
+
     }
 
     @Test
-    void create_ClientNotCreated() {
+    void create_AlreadyExistsException_ClientAlreadyExists() throws Exception {
         clientService.delete();
-        clientService.create(new ClientDTO.ClientNoId("Misha", "AAA111"));
-        List<Client> before = clientService.findClients();
-        ResponseEntity<Void> response =
-                clientController.createClient(new ClientDTO.ClientNoId("Misha", "AAA111"));
-        List<Client> after = clientService.findClients();
-        Assertions.assertTrue(response.getStatusCode().equals(HttpStatus.OK) && before.equals(after));
+        clientService.create(new ClientNoId("Misha", "AAA111"));
+        mvc.perform(post("/internal/client/create")
+                        .content(asJsonString(new ClientNoId("Misha", "AAA111")))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isConflict());
     }
 }

@@ -12,7 +12,7 @@ import org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoCo
 import ru.mrsu.handler.exception.NotFoundApiException;
 import ru.mrsu.springmongodb.config.MongoDBContainerBase;
 import ru.mrsu.springmongodb.model.Client;
-import ru.mrsu.springmongodb.model.ClientDTO;
+import ru.mrsu.springmongodb.model.ClientNoId;
 import ru.mrsu.springmongodb.repository.ClientRepository;
 import ru.mrsu.springmongodb.service.impl.ClientServiceImpl;
 
@@ -36,7 +36,7 @@ public class ClientServiceTest extends MongoDBContainerBase {
     void createTest_createClient() {
         clientRepository.deleteAll();
         List<Client> before = clientRepository.findAll();
-        clientService.create(new ClientDTO.ClientNoId("Misha", "FFF111"));
+        clientService.create(new ClientNoId("Misha", "FFF111"));
         List<Client> after = clientRepository.findAll();
         Assertions.assertNotEquals(before, after);
     }
@@ -46,7 +46,7 @@ public class ClientServiceTest extends MongoDBContainerBase {
         clientRepository.deleteAll();
         clientRepository.save(new Client(ObjectId.get(), "Misha", "FFF111"));
         List<Client> before = clientRepository.findAll();
-        clientService.create(new ClientDTO.ClientNoId("Misha", "FFF111"));
+        clientService.create(new ClientNoId("Misha", "FFF111"));
         List<Client> after = clientRepository.findAll();
         Assertions.assertEquals(before, after);
     }
@@ -54,7 +54,7 @@ public class ClientServiceTest extends MongoDBContainerBase {
     @Test
     void findByNameTest_NotFind_EmptyDB() {
         clientRepository.deleteAll();
-        List<ClientDTO.ClientNoId> clients = clientService.findByName("Misha");
+        List<ClientNoId> clients = clientService.findByName("Misha");
         Assertions.assertTrue(clients == null || clients.isEmpty());
     }
 
@@ -62,7 +62,7 @@ public class ClientServiceTest extends MongoDBContainerBase {
     void findByNameTest_NotFind_AnotherName() {
         clientRepository.deleteAll();
         clientRepository.save(new Client(ObjectId.get(), "Katya", "AAA111"));
-        List<ClientDTO.ClientNoId> clients = clientService.findByName("Misha");
+        List<ClientNoId> clients = clientService.findByName("Misha");
         Assertions.assertTrue(clients == null || clients.isEmpty());
     }
 
@@ -70,7 +70,7 @@ public class ClientServiceTest extends MongoDBContainerBase {
     void findByNameTest_FindName() {
         clientRepository.deleteAll();
         clientRepository.save(new Client(ObjectId.get(), "Misha", "AAA111"));
-        List<ClientDTO.ClientNoId> clients = clientService.findByName("Misha");
+        List<ClientNoId> clients = clientService.findByName("Misha");
         Assertions.assertTrue(clients != null && !clients.isEmpty());
     }
 
